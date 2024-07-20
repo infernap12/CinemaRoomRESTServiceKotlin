@@ -1,0 +1,22 @@
+# course config files
+course-info.yaml
+course-remote-info.yaml
+*/lesson-info.yaml
+*/task-info.yaml
+
+# gradle
+.gradle/
+build
+
+# topics
+Topics
+
+# idea config
+.idea
+
+# old stages
+/Cinema Room REST Service (Kotlin)/*
+!/Cinema Room REST Service (Kotlin)/task/
+/Cinema Room REST Service (Kotlin)/task/*
+!/Cinema Room REST Service (Kotlin)/task/src
+
