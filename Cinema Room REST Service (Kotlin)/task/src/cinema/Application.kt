@@ -1,7 +1,7 @@
 package cinema
 
-import cinema.dto.SeatDTO
-import cinema.model.Room
+import cinema.dto.*
+import cinema.model.CinemaService
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.http.HttpStatus
@@ -17,36 +17,34 @@ fun main(args: Array<String>) {
 }
 
 @RestController
-class CinemaRestController(private val room: Room) {
-
+class CinemaRestController(private val cinemaService: CinemaService) {
     @GetMapping(path = ["/seats"])
-    fun seats() = ResponseEntity(room.getDTO(), HttpStatus.OK)
+    fun seats() = ResponseEntity(cinemaService.getRoomDTO(), HttpStatus.OK)
 
     @PostMapping(path = ["/purchase"])
-    fun purchases(@RequestBody() seat: SeatDTO): ResponseEntity<SeatDTO> {
-        if (seat.row !in 1..room.rows || seat.column !in 1..room.columns) {
-            throw SeatBookException("The number of a row or a column is out of bounds!")
+    fun purchases(@RequestBody seat: SeatDTO): ResponseEntity<PurchaseResponseDTO> {
+        val deeto = cinemaService.purchaseSeat(seat)
+        if (deeto == null) {
+            throw SeatBookException("The ticket has been already purchased!")
         }
-        val price = room.bookSeat(row = seat.row, column = seat.column)
-            ?: throw SeatBookException("The ticket has been already purchased!")
+        return ResponseEntity(deeto, HttpStatus.OK)
+    }
 
-        return ResponseEntity(SeatDTO(seat.row, seat.column, price), HttpStatus.OK)
 
+    @PostMapping(path = ["/return"])
+    fun returns(@RequestBody req: ReturnRequestDTO): ReturnResponseDTO {
+        val returnDto = ReturnResponseDTO(cinemaService.returnSeat(req))
+        println(returnDto.toString())
+        return returnDto
     }
 
     @ExceptionHandler(SeatBookException::class)
-    fun handleSeatAlreadyBooked(
-        e: SeatBookException, request: WebRequest
-    ): ResponseEntity<CustomErrorMessage> {
-
-        val body = e.message?.let {
-            CustomErrorMessage(
-                it
-            )
-        }
+    fun handleSeatAlreadyBooked(e: SeatBookException, request: WebRequest): ResponseEntity<CustomErrorMessage> {
+        val body = e.message?.let { CustomErrorMessage(it) }
         return ResponseEntity<CustomErrorMessage>(body, HttpStatus.BAD_REQUEST)
     }
 }
+
 
 @ResponseStatus(code = HttpStatus.BAD_REQUEST)
 class SeatBookException(message: String) : RuntimeException(message)

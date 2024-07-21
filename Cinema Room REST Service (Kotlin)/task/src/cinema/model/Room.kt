@@ -1,8 +1,7 @@
 package cinema.model
 
 import cinema.dto.SeatDTO
-import cinema.dto.SeatResponseDTO
-import org.springframework.stereotype.Component
+import java.util.*
 
 const val FRONT_PRICE = 10
 const val BACK_PRICE = 8
@@ -10,8 +9,10 @@ const val SMALL_ROOM_SIZE = 60
 
 
 // Class that represents a distinct room in a cinema
-@Component
+
 class Room(val rows: Int = 9, val columns: Int = 9) {
+    val tickets = emptyMap<UUID, SeatDTO>().toMutableMap()
+
     // 2d list of all the seats in the cinema room
     val roomSeats: List<MutableList<Char>> = List(rows) { MutableList(columns) { 'S' } }
     val small = rows * columns <= SMALL_ROOM_SIZE
@@ -20,13 +21,13 @@ class Room(val rows: Int = 9, val columns: Int = 9) {
     val frontRows get() = roomSeats.take(rows.div(2))
     val backRows get() = roomSeats.takeLast(rows.divR(2))
 
-    fun getDTO(): SeatResponseDTO {
+    fun getSeatList(): List<SeatDTO> {
         val seatList = roomSeats.mapIndexed { y, row ->
             List(row.size) { x ->
                 SeatDTO(y + 1, x + 1, getSeatPrice(y))
             }
         }.flatten()
-        return SeatResponseDTO(rows, columns, seatList)
+        return seatList
     }
 
     fun print() {
@@ -42,6 +43,19 @@ class Room(val rows: Int = 9, val columns: Int = 9) {
         return roomSeats[row - 1][seat - 1]
     }
 
+    fun get(token: UUID): SeatDTO? {
+        return tickets[token]
+    }
+
+    fun unbook(token: UUID): SeatDTO? {
+        val seatDTO = tickets.remove(token)
+        if (seatDTO == null) {
+            return null
+        }
+        roomSeats[seatDTO.row - 1][seatDTO.column - 1] = 'S'
+        return seatDTO
+    }
+
     // calculate total income based on rows and total seat count
     fun getTotalIncome(): Int {
         return if (small) rows * columns * FRONT_PRICE else {
@@ -55,14 +69,13 @@ class Room(val rows: Int = 9, val columns: Int = 9) {
 //        return if (small || row <= this.rows / 2) FRONT_PRICE else BACK_PRICE
     }
 
-    fun bookSeat(row: Int, column: Int): Int? {
-        val ch = roomSeats[row - 1][column - 1]
-        if (ch == 'B') {
-            return null
-        } else {
-            roomSeats[row - 1][column - 1] = 'B'
-            return getSeatPrice(row)
-        }
+    fun bookSeat(row: Int, column: Int): UUID {
+        roomSeats[row - 1][column - 1] = 'B'
+        val seat = SeatDTO(row, column, getSeatPrice(row))
+        val token = UUID.randomUUID()
+        tickets[token] = seat
+        return token
+
     }
 
     fun getCurrentIncome(): Int {
@@ -72,4 +85,6 @@ class Room(val rows: Int = 9, val columns: Int = 9) {
     }
 
     private fun countPurchasedSeats(rows: List<List<Char>>): Int = rows.flatten().count { it == 'B' }
+
+    class Seat(val x: Int, val y: Int)
 }
