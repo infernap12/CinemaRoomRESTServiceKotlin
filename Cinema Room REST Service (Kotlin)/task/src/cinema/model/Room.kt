@@ -15,8 +15,10 @@ class Room(val rows: Int = 9, val columns: Int = 9) {
 
     // 2d list of all the seats in the cinema room
     val roomSeats: List<MutableList<Char>> = List(rows) { MutableList(columns) { 'S' } }
-    val small = rows * columns <= SMALL_ROOM_SIZE
+    val size get() = rows * columns
+    val small = size <= SMALL_ROOM_SIZE
     val purchased: Int get() = countPurchasedSeats(roomSeats)
+    val available get() = size - purchased
     val capacity: Double get() = purchased.toDouble() / (rows * columns) * 100
     val frontRows get() = roomSeats.take(rows.div(2))
     val backRows get() = roomSeats.takeLast(rows.divR(2))

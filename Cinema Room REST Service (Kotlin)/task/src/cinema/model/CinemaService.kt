@@ -5,6 +5,7 @@ import cinema.dto.PurchaseResponseDTO
 import cinema.dto.ReturnRequestDTO
 import cinema.dto.SeatDTO
 import cinema.dto.SeatsResponseDTO
+import cinema.dto.StatsResponseDTO
 import org.springframework.stereotype.Component
 
 @Component
@@ -46,5 +47,13 @@ class CinemaService {
             throw SeatBookException("Wrong token!")
         }
         return unbookedSeat
+    }
+
+    fun getStats(roomID: Int = 0): StatsResponseDTO {
+        val room = rooms[roomID]
+        val currentIncome = room.getCurrentIncome()
+        val remainingSeats = room.available
+        val purchasedTickets = room.purchased
+        return StatsResponseDTO(currentIncome, remainingSeats, purchasedTickets)
     }
 }

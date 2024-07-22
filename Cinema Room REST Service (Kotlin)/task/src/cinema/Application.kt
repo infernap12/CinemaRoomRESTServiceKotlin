@@ -23,19 +23,25 @@ class CinemaRestController(private val cinemaService: CinemaService) {
 
     @PostMapping(path = ["/purchase"])
     fun purchases(@RequestBody seat: SeatDTO): ResponseEntity<PurchaseResponseDTO> {
-        val deeto = cinemaService.purchaseSeat(seat)
-        if (deeto == null) {
+        val purchasedSeat = cinemaService.purchaseSeat(seat)
+        if (purchasedSeat == null) {
             throw SeatBookException("The ticket has been already purchased!")
         }
-        return ResponseEntity(deeto, HttpStatus.OK)
+        return ResponseEntity(purchasedSeat, HttpStatus.OK)
     }
 
 
     @PostMapping(path = ["/return"])
     fun returns(@RequestBody req: ReturnRequestDTO): ReturnResponseDTO {
         val returnDto = ReturnResponseDTO(cinemaService.returnSeat(req))
-        println(returnDto.toString())
         return returnDto
+    }
+
+    @GetMapping(path = ["/stats"])
+    fun stats(@RequestParam password: String?): StatsResponseDTO {
+        if (password != "super_secret") throw BadPasswordException("The password is wrong!")
+        val cinemaStats = cinemaService.getStats()
+        return cinemaStats
     }
 
     @ExceptionHandler(SeatBookException::class)
@@ -43,10 +49,19 @@ class CinemaRestController(private val cinemaService: CinemaService) {
         val body = e.message?.let { CustomErrorMessage(it) }
         return ResponseEntity<CustomErrorMessage>(body, HttpStatus.BAD_REQUEST)
     }
+
+    @ExceptionHandler(BadPasswordException::class)
+    fun handleBadPassword(e: BadPasswordException, request: WebRequest): ResponseEntity<CustomErrorMessage> {
+        val body = e.message?.let { CustomErrorMessage(it) }
+        return ResponseEntity<CustomErrorMessage>(body, HttpStatus.UNAUTHORIZED)
+    }
 }
 
 
 @ResponseStatus(code = HttpStatus.BAD_REQUEST)
 class SeatBookException(message: String) : RuntimeException(message)
+
+@ResponseStatus(code = HttpStatus.UNAUTHORIZED)
+class BadPasswordException(message: String) : RuntimeException(message)
 
 class CustomErrorMessage(val error: String)
